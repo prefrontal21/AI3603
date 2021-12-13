@@ -7,7 +7,94 @@ import time
 
 ###  START CODE HERE  ###
 # You can tune the hyper-parameter, and define your utility function or class in this block if necessary. 
-    
+
+obstacles_x = {0: [[0, 5]], 0.5: [],  1: [[2, 2.5]],
+               1.5: [[2, 2.5]], 2: [[1, 1.5], [2, 3.5]],
+               2.5: [[1, 1.5]], 3: [[1, 1.5], [2, 3.5]],
+               3.5: [[1, 1.5]], 4: [[4, 4.5]],
+               4.5: [[4, 4.5]], 5: [[0, 5]]}
+
+obstacles_y = {0: [[0, 5]], 0.5: [], 1: [[2, 2.5], [3, 3.5]],
+               1.5: [[2, 2.5], [3, 3.5]], 2: [[1, 1.5], [2, 3.5]],
+               2.5: [[1, 1.5]], 3: [],
+               3.5: [[2, 3]], 4: [[4, 4.5]],
+               4.5: [[4, 4.5]], 5: [[0, 5]]}
+
+
+def mod2pi(theta):
+    return math.radians(math.degrees(theta) % 360)
+
+
+def is_right_direction(theta):
+    return (0 <= theta and theta <= math.pi/2) or (theta >= 3*math.pi/2 and theta <= 2 * math.pi)
+
+
+def is_up_direction(theta):
+    return 0 <= theta and theta <= math.pi
+
+
+def get_x_nearest_obstacle(x, theta):
+    if is_right_direction(theta):
+        return int(x*2+1)/2.0
+    else:
+        return int(x*2)/2.0
+
+
+def get_y_nearest_obstacle(y, theta):
+    if is_up_direction(theta):
+        return int(y*2+1)/2.0
+    else:
+        return int(y*2)/2.0
+
+
+def find_cloest_x_obstacle(x, y, theta):
+    k = math.tan(theta)
+    pos_x = get_x_nearest_obstacle(x, theta)
+    while pos_x <= 5.0 and pos_x >= 0:
+        pos_y = y + k * (pos_x - x)
+        for range_y in obstacles_x[pos_x]:
+            if pos_y >= range_y[0] and pos_y <= range_y[1]:
+                return pos_x, pos_y
+        pos_x += 0.5 if is_right_direction(theta) else -0.5
+    return 100, 100
+
+
+def find_cloest_y_obstacle(x, y, theta):
+    k = math.tan(math.pi/2 - theta)
+    pos_y = get_y_nearest_obstacle(y, theta)
+    while pos_y <= 5.0 and pos_y >= 0:
+        pos_x = x + k * (pos_y - y)
+        for range_x in obstacles_y[pos_y]:
+            if pos_x >= range_x[0] and pos_x <= range_x[1]:
+                return pos_x, pos_y
+        pos_y += 0.5 if is_up_direction(theta) else -0.5
+
+    return 100, 100
+
+
+def find_cloest_obstacle(x, y, theta):
+    obstacle_1_x, obstacle_1_y = find_cloest_x_obstacle(x, y, theta)
+    distance1 = math.sqrt((obstacle_1_x - x)**2 + (obstacle_1_y - y)**2)
+    obstacle_2_x, obstacle_2_y = find_cloest_y_obstacle(x, y, theta)
+    distance2 = math.sqrt((obstacle_2_x - x)**2 + (obstacle_2_y - y)**2)
+    return distance1 if distance1 < distance2 else distance2
+
+
+def detect_obstacles(x, y, theta):
+    distance = np.array([find_cloest_obstacle(
+        x, y, mod2pi(theta + i * math.pi/4)) for i in range(-2, 3)])
+
+    return distance
+
+
+def randomize_input(u):
+    v = u[0]
+    w = u[1]
+    v = v + np.random.randn() * R[0, 0] ** 0.5
+    w = w + np.random.randn() * R[1, 1] ** 0.5
+    ud = np.array([v, w]).reshape(2, 1)
+    return ud
+
 # Particle filter parameter
 NP = 1000  # Number of Particle
 NTh = NP / 2.0  # Number of particle for re-sampling
@@ -28,7 +115,7 @@ pts=5
 
 #  Simulation parameter
 Q_sim = np.diag([0.05]) ** 2  # add noise to lidar readings
-R_sim = np.diag([0.03, np.deg2rad(3)]) ** 2  # add noise to control command
+R_sim = np.diag([0.01, np.deg2rad(1)]) ** 2  # add noise to control command
 
 v=0.5  #linear velocity
 w=0.25 #angular velocity
@@ -162,8 +249,14 @@ def pf_localization(px,pw,data,u):
 
     for ip in range(NP):
         #  Prediction step: Predict with random input sampling
-        pass
+        ud = randomize_input(u)
+        par = px[:, ip].reshape(3, 1)
+        pred = motion_model(par, ud)
+        px[:, ip] = pred.reshape(3)
 
+        pw[0][ip] = 1 / \
+            np.linalg.norm(detect_obstacles(
+                px[0][ip], px[1][ip], px[2][ip]) - data)
         #  Update steps: Calculate importance weight
         pass
     
@@ -171,7 +264,7 @@ def pf_localization(px,pw,data,u):
     x_est = px.dot(pw.T)
 
     # Resample step: Resample the particles.
-    pass
+    px, pw = re_sampling(px, pw)
 
     ###  END CODE HERE  ###
     print("The time used for each iteration:",time.time()-t1," s")
@@ -190,10 +283,13 @@ def re_sampling(px, pw):
     pw -- The weight of all particles after resampling.
     """
     ### START CODE HERE ###
-
+    indices = np.array([i for i in range(NP)])
+    pw_indices = np.random.choice(indices, NP, replace=True, p=pw[0])
+    proposol_particles = np.array(
+        [[px[j][pw_indices[i]] + (np.random.rand()-0.5)/5 for i in range(NP)] for j in range(3)])
 
     ###  END CODE HERE  ###
-    return px, pw
+    return proposol_particles, pw
 
 if __name__ == '__main__':
     plt.figure(figsize=(8,8)) 
