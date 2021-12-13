@@ -1,0 +1,14 @@
+[ 
+  {
+    "id": "Sokoban-small-v0",
+    "entry_point": "gym_sokoban.envs:SokobanEnv_Small0"
+  },
+  {
+    "id": "Sokoban-small-v1",
+    "entry_point": "gym_sokoban.envs:SokobanEnv_Small1"
+  },
+  {
+    "id": "Sokoban-hw2-v0",
+    "entry_point": "gym_sokoban.envs:SokobanEnv_Small2"
+  }
+]
