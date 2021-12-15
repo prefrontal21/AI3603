@@ -353,6 +353,16 @@ if __name__ == '__main__':
             # Plot the particles
             plt.scatter(px[0, :], px[1, :], color='g', s=5)
 
+            # Plot the ladar points
+            for i in range(5):
+                theta = ori + np.pi/4 * (i-2)
+                pos_x = pos[0] + np.cos(theta)*data[i]
+                pos_y = pos[1] + np.sin(theta)*data[i]
+                x = [pos[0], pos_x]
+                y = [pos[1], pos_y]
+                plt.scatter(pos_x, pos_y, color='r', s=15)
+                plt.plot(x, y, color='r')
+
             plt.axis("equal")
             plt.grid(True)
             plt.xlim(-0.5, 5.5)
