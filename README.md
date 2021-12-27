@@ -12,10 +12,6 @@ You can see the homework requests and how to set up enviroment of each lab in `A
 
 ### Some Demos
 
-#### Lab1: Hybrid A* algorihtm
-![](AI3603_HW1/Hybrid_a_star.gif)
-
-
 #### Lab2: ucb algorithm
 ![](AI3603_HW2/sokoban_ucb.gif)
 
